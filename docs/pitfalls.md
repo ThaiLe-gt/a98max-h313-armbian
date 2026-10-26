@@ -23,6 +23,6 @@ In the order they were hit.
 
 ## Things that are not solved
 
-* No driver for the FD650 panel in the kernel; the script only bit-bangs it.
+* No kernel driver for the FD650 panel: a Python process bit-bangs two GPIOs through sysfs (works, but it is a userspace hack and wakes once per second).
 * `skw` logs `setup TXBA failed` now and then (block-ack setup). Not investigated.
 * The ported Wi-Fi driver replaces `wdev->mtx` by `wiphy_lock()`. It runs, but this was changed to compile, not reviewed against the cfg80211 locking rules.

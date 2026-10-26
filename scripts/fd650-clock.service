@@ -1,0 +1,11 @@
+[Unit]
+Description=Front panel clock (FD650 on PI11/PI12)
+After=multi-user.target time-sync.target
+
+[Service]
+ExecStart=/usr/bin/python3 /usr/local/sbin/fd650.py clock
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

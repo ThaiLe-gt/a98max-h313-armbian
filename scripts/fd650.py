@@ -52,6 +52,26 @@ def text(s):
         out.append(v); i += 1
     return out + [0] * (4 - len(out))
 
+def clock(bus):
+    """Show HH:MM (local time). Layout as in the Amlogic driver: the dot on digit 1 is the colon,
+    dots on digits 0 and 3 are fixed icons (lit), the dot on digit 2 is the 'lock' icon (off)."""
+    bus.write(SYS_ON_MAX)
+    last, colon = None, False
+    while True:
+        t = time.localtime()
+        hhmm = "%02d%02d" % (t.tm_hour, t.tm_min)
+        if hhmm != last:
+            d = [SEG[c] for c in hhmm]
+            bus.write(DIG[0] | d[0] | DOT)
+            bus.write(DIG[2] | d[2])
+            bus.write(DIG[3] | d[3] | DOT)
+            last = hhmm
+            bus.write(DIG[1] | d[1] | (DOT if colon else 0))
+        colon = not colon                      # blink once per second
+        d1 = SEG[hhmm[1]] | (DOT if colon else 0)
+        bus.write(DIG[1] | d1)
+        time.sleep(1 - (time.time() % 1))      # stay aligned to the wall-clock second
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "all"
     b = Bus()
@@ -59,4 +79,5 @@ if __name__ == "__main__":
     elif cmd == "off": b.write(SYS_OFF)
     elif cmd == "text": show(b, text(sys.argv[2]))
     elif cmd == "raw":  show(b, [int(x, 0) for x in sys.argv[2:6]])
-    else: sys.exit("usage: fd650.py all|off|text STR|raw A B C D")
+    elif cmd == "clock": clock(b)
+    else: sys.exit("usage: fd650.py all|off|clock|text STR|raw A B C D")

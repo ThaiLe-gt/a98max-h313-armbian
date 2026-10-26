@@ -72,7 +72,10 @@ Everything below was read from one unit, from the running Android 13 firmware
 ## Front panel and LEDs
 
 * The visible front indicator is an **FD650** LED controller (2-wire, I²C-like, no ACK) on **PI11 = CLK, PI12 = DAT** (stock DT `oranth,fd650`).
-  `scripts/fd650.py` implements the protocol from the Amlogic driver; **unconfirmed on hardware**.
+  `scripts/fd650.py` implements the protocol from the Amlogic driver and bit-bangs it through sysfs GPIO.
+  **Works on hardware**: the owner confirmed that `fd650.py all` lights the panel and that `fd650.py clock` (run by `fd650-clock.service`) shows the time.
+  Layout used (taken from the Amlogic driver, not checked segment by segment): the dot of digit 1 is the blinking colon, the dots of digits 0 and 3 stay lit,
+  the dot of digit 2 (lock icon) is off.
 * PH6 and PH7 are also named `normal_led`/`standby_led` in the stock DT (`gpio_para`). Driving them was not observed to light anything.
 
 ## Other

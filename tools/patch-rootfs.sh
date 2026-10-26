@@ -16,6 +16,8 @@ if [ "${1:-}" = "--wifi" ]; then WIFI=1; MODS=${2:?modules dir}; FW=${3:?firmwar
 [ -d "$ROOT/boot/dtb/allwinner" ] && [ -f "$ROOT/boot/armbianEnv.txt" ] || { echo "$ROOT does not look like an Armbian rootfs"; exit 1; }
 [ -f "$DTB" ] || { echo "no such dtb: $DTB"; exit 1; }
 
+mkdir -p "$ROOT/usr/local/sbin" "$ROOT/etc/systemd/system"
+
 # 1) device tree + boot environment
 install -m 644 "$DTB" "$ROOT/boot/dtb/allwinner/sun50i-h313-a98max.dtb"
 E="$ROOT/boot/armbianEnv.txt"
@@ -30,8 +32,11 @@ install -m 644 "$HERE/scripts/ac300-ephy.service" "$ROOT/etc/systemd/system/ac30
 mkdir -p "$ROOT/etc/systemd/system/sysinit.target.wants"
 ln -sf /etc/systemd/system/ac300-ephy.service "$ROOT/etc/systemd/system/sysinit.target.wants/ac300-ephy.service"
 
-# 3) front panel + helper
+# 3) front panel clock (FD650) + helper
 install -m 755 "$HERE/scripts/fd650.py" "$ROOT/usr/local/sbin/fd650.py"
+install -m 644 "$HERE/scripts/fd650-clock.service" "$ROOT/etc/systemd/system/fd650-clock.service"
+mkdir -p "$ROOT/etc/systemd/system/multi-user.target.wants"
+ln -sf /etc/systemd/system/fd650-clock.service "$ROOT/etc/systemd/system/multi-user.target.wants/fd650-clock.service"
 install -m 755 "$HERE/scripts/connect-wifi" "$ROOT/usr/local/sbin/connect-wifi"
 
 # 4) the image ships a driver stack for a different Wi-Fi chip (UWE5622/AW859A); keep it away from ours

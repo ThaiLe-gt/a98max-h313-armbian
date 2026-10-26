@@ -18,7 +18,7 @@ device tree, an Ethernet fix, a ported Wi-Fi driver, and the notes on how each p
 | Ethernet (100 M) | works | needs the AC300 PHY clock fix, see [`scripts/ac300-ephy-clk.py`](scripts/ac300-ephy-clk.py) |
 | Wi-Fi 2.4 GHz (Seekwave EA6521QF) | works | scan, WPA2 connect, ~44 Mbit/s, survives reboot. **5 GHz not tested** |
 | Docker 29.x | works | `hello-world`, memory/pids/cpu limits, NAT networking verified |
-| Front panel (FD650) | **unconfirmed** | commands are sent, nobody has verified that anything lights up |
+| Front panel (FD650, 4-digit display) | works | shows the time (HHMM) via `scripts/fd650.py clock`; confirmed by the owner. Digit order and blinking colon were not inspected in detail |
 | Bluetooth, audio, IR, USB-OTG | not tried | |
 | Wi-Fi driver stability | limited testing | occasional `setup TXBA failed` in the log; no disconnects seen so far |
 
@@ -45,7 +45,7 @@ computer with Docker, and a way to log in (HDMI + USB keyboard, or Ethernet + SS
 3. **Device tree**: `dts/make-a98max-dtb.py` rebuilds `sun50i-h313-a98max.dtb` from the DTB inside the image
    (`sun50i-h313-x96q-lpddr3.dtb`). Needs `dtc`.
 4. **Apply to the card's root filesystem** (mounted on Linux): `sudo tools/patch-rootfs.sh /mnt/sd sun50i-h313-a98max.dtb`.
-   It installs the DTB, the Ethernet clock service and helpers, and disables the image's wrong-chip Wi-Fi stack.
+   It installs the DTB, the Ethernet clock service, the front-panel clock and helpers, and disables the image's wrong-chip Wi-Fi stack.
 5. Boot with HDMI and the network cable connected. Armbian asks you to create a user on first login.
 6. **Wi-Fi (optional)**: build the modules with `wifi/build-modules.sh`, copy the four firmware files from the
    box's own Android partition (see [`docs/wifi.md`](docs/wifi.md)), then re-run `patch-rootfs.sh` with `--wifi`.
@@ -60,7 +60,7 @@ The complete flow was done by hand on real hardware; **the combined procedure ab
 uboot/     defconfig + device tree + build script + prebuilt binary (+ sha256)
 dts/       make-a98max-dtb.py: derive the kernel DTB (no third-party DTS is copied here)
 wifi/      port of the Seekwave driver to Linux 6.12 (patch), module build + notes
-scripts/   ac300-ephy-clk.py (+unit), seekwave-wifi.service, connect-wifi, fd650.py
+scripts/   ac300-ephy-clk.py (+unit), seekwave-wifi.service, connect-wifi, fd650.py (+ clock unit)
 tools/     patch-rootfs.sh
 docs/      hardware.md, pitfalls.md, wifi.md
 ```
