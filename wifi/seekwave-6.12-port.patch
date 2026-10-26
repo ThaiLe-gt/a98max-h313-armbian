@@ -1,0 +1,254 @@
+diff --git a/drivers/seekwaveplatform/skwutil/skw_boot.c b/drivers/seekwaveplatform/skwutil/skw_boot.c
+index d02b6ee..e46ea98 100644
+--- a/drivers/seekwaveplatform/skwutil/skw_boot.c
++++ b/drivers/seekwaveplatform/skwutil/skw_boot.c
+@@ -200,7 +200,6 @@ ret:
+ static int seekwave_boot_parse_dt(struct platform_device *pdev, struct seekwave_device *boot_data)
+ {
+ 	int ret = 0;
+-	enum of_gpio_flags flags;
+ 	struct device_node *np = pdev->dev.of_node;
+ 	/*add the dma type dts config*/
+ 	if (of_property_read_u32(np, "dma_type", &(boot_data->dma_type))){
+@@ -210,9 +209,9 @@ static int seekwave_boot_parse_dt(struct platform_device *pdev, struct seekwave_
+ 		boot_data->chip_gpio =  MODEM_WAKEUP_GPIO_OUT;
+ 		skwboot_log("no DTS setting\n");
+ 	} else {
+-		boot_data->host_gpio = of_get_named_gpio_flags(np, "gpio_host_wake", 0, &flags);
+-		boot_data->chip_gpio = of_get_named_gpio_flags(np, "gpio_chip_wake",0, &flags);
+-		boot_data->chip_en = of_get_named_gpio_flags(np, "gpio_chip_en",0, &flags);
++		boot_data->host_gpio = of_get_named_gpio(np, "gpio_host_wake", 0);
++		boot_data->chip_gpio = of_get_named_gpio(np, "gpio_chip_wake", 0);
++		boot_data->chip_en = of_get_named_gpio(np, "gpio_chip_en", 0);
+ 	}
+ 	if(test_debug==1){//test debug inband irq and nosleep en
+ 		boot_data->chip_gpio=-1;
+@@ -403,6 +402,12 @@ static const struct of_device_id seekwave_match_table[] ={
+ 	{ },
+ };
+ 
++/* 6.11+: platform_driver.remove returns void */
++static void seekwave_boot_remove_void(struct platform_device *pdev)
++{
++	seekwave_boot_remove(pdev);
++}
++
+ static struct platform_driver seekwave_driver ={
+ 
+ 	.driver = {
+@@ -411,7 +416,7 @@ static struct platform_driver seekwave_driver ={
+ 		.of_match_table = seekwave_match_table,
+ 	},
+ 	.probe = seekwave_boot_probe,
+-	.remove = seekwave_boot_remove,
++	.remove = seekwave_boot_remove_void,
+ 	.shutdown = seekwave_boot_shutdown,
+ };
+ 
+diff --git a/drivers/seekwaveplatform/skwutil/skw_user_com.c b/drivers/seekwaveplatform/skwutil/skw_user_com.c
+index 39b698a..b9851ef 100644
+--- a/drivers/seekwaveplatform/skwutil/skw_user_com.c
++++ b/drivers/seekwaveplatform/skwutil/skw_user_com.c
+@@ -307,7 +307,7 @@ static int skw_ucom_probe(struct platform_device *pdev)
+ 	int ret = 0;
+ 
+ 	if(skw_com_class == NULL) {
+-		skw_com_class = class_create(THIS_MODULE, "btcom");
++		skw_com_class = class_create("btcom");
+ 		if(IS_ERR(skw_com_class)) {
+ 			ret =  PTR_ERR(skw_com_class);
+ 			skw_com_class = NULL;
+@@ -400,6 +400,12 @@ static int skw_ucom_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++/* 6.11+: platform_driver.remove returns void */
++static void skw_ucom_remove_void(struct platform_device *pdev)
++{
++	skw_ucom_remove(pdev);
++}
++
+ static struct platform_driver skw_ucom_driver = {
+ 	.driver = {
+ 		.name	= (char*)"skw_ucom",
+@@ -407,7 +413,7 @@ static struct platform_driver skw_ucom_driver = {
+ 		.pm	= UCOM_DEV_PM_OPS,
+ 	},
+ 	.probe = skw_ucom_probe,
+-	.remove = skw_ucom_remove,
++	.remove = skw_ucom_remove_void,
+ };
+ 
+ int skw_ucom_init(void)
+diff --git a/drivers/skwifi/skw_cfg80211.c b/drivers/skwifi/skw_cfg80211.c
+index d1f49d3..3554606 100644
+--- a/drivers/skwifi/skw_cfg80211.c
++++ b/drivers/skwifi/skw_cfg80211.c
+@@ -16,6 +16,7 @@
+  ******************************************************************************/
+ 
+ #include <linux/ieee80211.h>
++#include <linux/sched/clock.h>
+ #include <net/cfg80211.h>
+ #include <linux/inetdevice.h>
+ #include <net/addrconf.h>
+@@ -1309,7 +1310,6 @@ static int skw_start_ap(struct wiphy *wiphy, struct net_device *dev,
+ 	iface->sap.ht_required = settings->ht_required;
+ 	iface->sap.vht_required = settings->vht_required;
+ 
+-	iface->sap.cfg.crypto.wep_keys = NULL;
+ 	iface->sap.cfg.crypto.psk = NULL;
+ #else
+ 	iface->sap.cfg.ht_cap = NULL;
+@@ -4732,6 +4732,27 @@ static int skw_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
+ 					capa, tdls_initiator, ies, ies_len);
+ }
+ 
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
++static int skw_change_beacon_v67(struct wiphy *wiphy, struct net_device *dev,
++				 struct cfg80211_ap_update *info)
++{
++	return skw_change_beacon(wiphy, dev, &info->beacon);
++}
++#endif
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
++static int skw_tdls_mgmt_v65(struct wiphy *wiphy, struct net_device *dev,
++			     const u8 *peer, int link_id, u8 action_code,
++			     u8 dialog_token, u16 status_code,
++			     u32 peer_capability, bool initiator,
++			     const u8 *buf, size_t len)
++{
++	return skw_tdls_mgmt(wiphy, dev, peer, action_code, dialog_token,
++			     status_code, peer_capability, initiator, buf, len);
++}
++#endif
++
+ static struct cfg80211_ops skw_cfg80211_ops  = {
+ 	.add_virtual_intf = skw_add_virtual_intf,
+ 	.del_virtual_intf = skw_del_virtual_intf,
+@@ -4745,7 +4766,11 @@ static struct cfg80211_ops skw_cfg80211_ops  = {
+ 	.del_key = skw_del_key,
+ 	.set_default_key = skw_set_default_key,
+ 	.set_default_mgmt_key = skw_set_default_mgmt_key,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
++	.change_beacon = skw_change_beacon_v67,
++#else
+ 	.change_beacon = skw_change_beacon,
++#endif
+ 	.start_ap = skw_start_ap,
+ 	.change_station = skw_change_station,
+ 	.stop_ap = skw_stop_ap,
+@@ -4784,7 +4809,11 @@ static struct cfg80211_ops skw_cfg80211_ops  = {
+ 	.add_tx_ts = skw_add_tx_ts,
+ 	.del_tx_ts = skw_del_tx_ts,
+ #endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
++	.tdls_mgmt = skw_tdls_mgmt_v65,
++#else
+ 	.tdls_mgmt = skw_tdls_mgmt,
++#endif
+ 	.tdls_oper = skw_tdls_oper,
+ 	.suspend = skw_suspend,
+ 	.resume = skw_resume,
+diff --git a/drivers/skwifi/skw_compat.h b/drivers/skwifi/skw_compat.h
+index 2f1c323..b4830cd 100644
+--- a/drivers/skwifi/skw_compat.h
++++ b/drivers/skwifi/skw_compat.h
+@@ -290,7 +290,8 @@ static inline void skw_compat_rx_assoc_resp(struct net_device *dev,
+ {
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+-	struct cfg80211_rx_assoc_resp assoc_resp = {
++	struct cfg80211_rx_assoc_resp_data assoc_resp = {
++		.uapsd_queues = uapsd,
+ 		.buf = buf,
+ 		.len = len,
+ 		.req_ies = req_ies,
+@@ -472,7 +473,9 @@ static inline int skw_set_wiphy_regd_sync(struct wiphy *wiphy,
+ static inline void skw_ch_switch_notify(struct net_device *dev,
+ 		struct cfg80211_chan_def *chandef, u8 count,  bool quiet)
+ {
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
++	cfg80211_ch_switch_started_notify(dev, chandef, 0, count, quiet);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+ 	cfg80211_ch_switch_started_notify(dev, chandef, 0, count, quiet, 1);
+ #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
+ 	cfg80211_ch_switch_started_notify(dev, chandef, count);
+diff --git a/drivers/skwifi/skw_core.c b/drivers/skwifi/skw_core.c
+index 7474534..70176b4 100644
+--- a/drivers/skwifi/skw_core.c
++++ b/drivers/skwifi/skw_core.c
+@@ -30,7 +30,7 @@
+ #include <linux/if_tunnel.h>
+ #include <linux/firmware.h>
+ #include <generated/utsrelease.h>
+-#include <linux/rfkill-wlan.h>
++/* #include <linux/rfkill-wlan.h>  (Rockchip BSP only) */
+ 
+ #include "skw_core.h"
+ #include "skw_cfg80211.h"
+@@ -1973,8 +1973,7 @@ static int skw_drv_probe(struct platform_device *pdev)
+ 	    skw_sync_chip_info(wiphy, &chip))
+ 		goto core_deinit;
+ 
+-	if (!is_valid_ether_addr(skw_mac))
+-		rockchip_wifi_mac_addr(skw_mac);
++	/* rockchip_wifi_mac_addr() is Rockchip BSP only; use the chip MAC */
+ 
+ 	skw_setup_mac_address(wiphy, skw_mac, chip.mac);
+ 
+@@ -2080,9 +2079,15 @@ static int skw_drv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++/* 6.11+: platform_driver.remove returns void */
++static void skw_drv_remove_void(struct platform_device *pdev)
++{
++	skw_drv_remove(pdev);
++}
++
+ static struct platform_driver skw_drv = {
+ 	.probe = skw_drv_probe,
+-	.remove = skw_drv_remove,
++	.remove = skw_drv_remove_void,
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+ 		.name = "sv6160_wireless1",
+diff --git a/drivers/skwifi/skw_msg.c b/drivers/skwifi/skw_msg.c
+index fadf904..f341025 100644
+--- a/drivers/skwifi/skw_msg.c
++++ b/drivers/skwifi/skw_msg.c
+@@ -254,7 +254,7 @@ static int skw_sta_rx_mgmt(struct skw_core *skw, struct skw_iface *iface,
+ 
+ 	iface->sta.last_seq_ctrl = seq_ctrl;
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
+-	mutex_lock(&iface->wdev.mtx);
++	wiphy_lock(iface->wdev.wiphy);
+ #endif
+ 	skw_sta_lock(&iface->sta.core);
+ 
+@@ -281,7 +281,7 @@ static int skw_sta_rx_mgmt(struct skw_core *skw, struct skw_iface *iface,
+ 
+ 	skw_sta_unlock(&iface->sta.core);
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
+-	mutex_unlock(&iface->wdev.mtx);
++	wiphy_unlock(iface->wdev.wiphy);
+ #endif
+ 
+ 	return ret;
+diff --git a/drivers/skwifi/skw_rx.c b/drivers/skwifi/skw_rx.c
+index dc07964..78843f1 100644
+--- a/drivers/skwifi/skw_rx.c
++++ b/drivers/skwifi/skw_rx.c
+@@ -16,6 +16,8 @@
+  ******************************************************************************/
+ 
+ #include <linux/timer.h>
++#include <net/rps.h>
++#include <net/netdev_rx_queue.h>
+ #include <linux/skbuff.h>
+ #include <linux/kthread.h>
+ #include <linux/cpumask.h>

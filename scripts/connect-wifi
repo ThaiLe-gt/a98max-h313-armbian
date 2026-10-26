@@ -1,0 +1,22 @@
+#!/bin/bash
+# Usage: sudo connect-wifi "SSID"   -> prompts for the password (hidden), writes a root-only netplan file.
+set -e
+SSID="${1:?usage: connect-wifi SSID}"
+[ "$(id -u)" = 0 ] || { echo "run as root (sudo)"; exit 1; }
+read -r -s -p "Password for \"$SSID\": " PW; echo
+[ "${#PW}" -ge 8 ] || { echo "WPA passphrase must be 8-63 characters"; exit 1; }
+F=/etc/netplan/20-wifi.yaml
+umask 077
+python3 - "$SSID" "$PW" > "$F" <<'PY'
+import sys, json
+ssid, pw = sys.argv[1], sys.argv[2]
+print("network:\n  version: 2\n  renderer: networkd\n  wifis:\n    wlan0:\n      dhcp4: true\n      dhcp6: true\n      access-points:")
+print("        %s:\n          password: %s" % (json.dumps(ssid), json.dumps(pw)))
+PY
+chmod 600 "$F"
+ip link set wlan0 up
+netplan generate && netplan apply
+echo "Waiting for an address on wlan0..."
+for i in $(seq 1 30); do ip -4 addr show wlan0 | grep -q "inet " && break; sleep 1; done
+iw dev wlan0 link | head -4
+ip -br addr show wlan0

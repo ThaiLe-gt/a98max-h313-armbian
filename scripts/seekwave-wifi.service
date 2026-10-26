@@ -1,0 +1,15 @@
+[Unit]
+Description=Seekwave EA6521QF Wi-Fi driver (out-of-tree, ported to 6.12)
+After=local-fs.target systemd-udevd.service
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=60
+ExecStart=/sbin/modprobe skw
+ExecStop=/sbin/modprobe -r skw skw_sdio skw_bootcoms
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+out/
+cache/
+*.img
+*.img.xz
+*.bin
+!uboot/prebuilt/u-boot-sunxi-with-spl.bin
+*.ko
+.DS_Store

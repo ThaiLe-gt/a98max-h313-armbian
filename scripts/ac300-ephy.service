@@ -1,0 +1,14 @@
+[Unit]
+Description=Enable AC300 EPHY 24MHz clock (PWM5 bypass on PA12)
+DefaultDependencies=no
+After=systemd-modules-load.service local-fs.target
+Before=network-pre.target systemd-networkd.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/ac300-ephy-clk.py
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target
