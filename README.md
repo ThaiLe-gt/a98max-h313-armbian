@@ -20,7 +20,7 @@ device tree, an Ethernet fix, a ported Wi-Fi driver, and the notes on how each p
 | Docker 29.x | works | `hello-world`, memory/pids/cpu limits, NAT networking verified |
 | Front panel (FD650, 4-digit display) | works | shows the time (HHMM) via `scripts/fd650.py clock`; confirmed by the owner. Digit order and blinking colon were not inspected in detail |
 | Bluetooth, audio, IR, USB-OTG | not tried | |
-| Wi-Fi driver stability | limited testing | occasional `setup TXBA failed` in the log; no disconnects seen so far |
+| Wi-Fi driver stability | limited testing | one harmless `setup TXBA failed` per association ([explained](docs/pitfalls.md#the-setup-txba-failed-ret--1-message-explained-harmless)); no disconnects seen so far |
 
 ## Hardware (read from the box, see [`docs/hardware.md`](docs/hardware.md))
 

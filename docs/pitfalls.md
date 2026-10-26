@@ -21,8 +21,28 @@ In the order they were hit.
    clock name is silently ignored, and PG10 must be muxed to the clock output.
 7. **Android mounts the SD card by itself** (`vold`), so `mount` on the card's partition says "busy". `sm unmount public:179,49` first.
 
+## The `setup TXBA failed, ret: -1` message (explained, harmless)
+
+`[SKWIFI ERROR] skw_work_process: setup TXBA failed, ret: -1` appears **once per association** and nothing else. Reproduced 3 out of 3 times by taking
+`wlan0` down and up (and it appears once at boot when Wi-Fi first connects). Sequence seen in the kernel log each time, times relative to
+`ASSOCED -> COMPLETED`:
+
+| t | event |
+|---|---|
+| +10 ms | driver queues TX Block-Ack setup for **TID 0** |
+| +28 ms | driver queues the same for **TID 6** (voice queue); it is **rejected in under 1 ms** → the error line |
+| +80 ms | TID 0 completes: `ADD_TX_BA ... tid: 0, status: 0, win size: 64` |
+| +150 ms | driver asks again for TID 6 and it succeeds: `ADD_TX_BA ... tid: 6, status: 0, win size: 64` |
+
+In the driver `ret = 0 - skw->cmd.status`, so `-1` is a status code 1 returned by the chip, not a timeout and not a local error (`skw_msg_xmit_timeout`).
+Reading of the timing (an inference, the chip firmware is closed): two `BA_ACTION` commands are issued back to back right after the connection completes
+and the second one is refused while the first is still being handled; the retry on the next frame succeeds. End result: every TID gets its Block-Ack, no
+disconnect, and the per-TID retry counter (`txba.tx_try`, blacklist after more than 5 failures) never gets near its limit.
+
+What did *not* trigger it: pings with various TOS values, UDP sockets with `SO_PRIORITY=6`, DHCP renewals and full DHCP restarts. If you want the message gone,
+either serialise the BA requests in `skw_setup_txba()` or demote the log line in `skw_work.c`; neither was done here.
+
 ## Things that are not solved
 
 * No kernel driver for the FD650 panel: a Python process bit-bangs two GPIOs through sysfs (works, but it is a userspace hack and wakes once per second).
-* `skw` logs `setup TXBA failed` now and then (block-ack setup). Not investigated.
 * The ported Wi-Fi driver replaces `wdev->mtx` by `wiphy_lock()`. It runs, but this was changed to compile, not reviewed against the cfg80211 locking rules.

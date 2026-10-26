@@ -15,6 +15,7 @@ mà là **Allwinner H313** (họ H616). Repo này chứa những thứ cần đ�
 | Ethernet 100M | chạy | cần sửa xung nhịp PHY AC300: [`scripts/ac300-ephy-clk.py`](scripts/ac300-ephy-clk.py) |
 | Wi-Fi 2,4 GHz (Seekwave EA6521QF) | chạy | quét, kết nối WPA2, khoảng 44 Mbit/s, tự nối lại sau khi khởi động. **Chưa thử 5 GHz** |
 | Docker 29.x | chạy | đã thử `hello-world`, giới hạn RAM/pids/CPU, mạng NAT |
+| Lỗi `setup TXBA failed` trong nhật ký Wi-Fi | vô hại | mỗi lần kết nối có một dòng: hai lệnh Block-Ack gửi sát nhau, lệnh thứ hai bị từ chối rồi thử lại thành công sau ~150 ms. Chi tiết trong [docs/pitfalls.md](docs/pitfalls.md) |
 | Màn hình số phía trước (FD650, 4 chữ số) | chạy | hiện giờ (HHMM) bằng `scripts/fd650.py clock`, chủ máy đã xác nhận. Chưa kiểm kỹ thứ tự chữ số và dấu hai chấm nhấp nháy |
 | Bluetooth, âm thanh, IR | chưa thử | |
 
