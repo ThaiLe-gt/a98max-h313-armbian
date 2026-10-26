@@ -17,7 +17,7 @@ device tree, an Ethernet fix, a ported Wi-Fi driver, and the notes on how each p
 | HDMI console | works | seen on a TV |
 | Ethernet (100 M) | works | needs the AC300 PHY clock fix, see [`scripts/ac300-ephy-clk.py`](scripts/ac300-ephy-clk.py) |
 | Wi-Fi 2.4 GHz (Seekwave EA6521QF) | works | scan, WPA2 connect, ~44 Mbit/s, survives reboot. **5 GHz not tested** |
-| Docker 29.x | works | `hello-world`, memory/pids/cpu limits, NAT networking verified |
+| Docker 29.x | works | `hello-world`, memory/pids/cpu limits, NAT networking verified; install notes in [`docs/docker.md`](docs/docker.md) |
 | Front panel (FD650, 4-digit display) | works | shows the time (HHMM) via `scripts/fd650.py clock`; confirmed by the owner. Digit order and blinking colon were not inspected in detail |
 | Bluetooth, audio, IR, USB-OTG | not tried | |
 | Wi-Fi driver stability | limited testing | one harmless `setup TXBA failed` per association ([explained](docs/pitfalls.md#the-setup-txba-failed-ret--1-message-explained-harmless)); no disconnects seen so far |
@@ -62,7 +62,7 @@ dts/       make-a98max-dtb.py: derive the kernel DTB (no third-party DTS is copi
 wifi/      port of the Seekwave driver to Linux 6.12 (patch), module build + notes
 scripts/   ac300-ephy-clk.py (+unit), seekwave-wifi.service, connect-wifi, fd650.py (+ clock unit)
 tools/     patch-rootfs.sh
-docs/      hardware.md, pitfalls.md, wifi.md
+docs/      hardware.md, pitfalls.md, wifi.md, docker.md
 ```
 
 ## Warnings

@@ -14,7 +14,7 @@ mà là **Allwinner H313** (họ H616). Repo này chứa những thứ cần đ�
 | Màn hình console HDMI | chạy | đã thấy trên TV |
 | Ethernet 100M | chạy | cần sửa xung nhịp PHY AC300: [`scripts/ac300-ephy-clk.py`](scripts/ac300-ephy-clk.py) |
 | Wi-Fi 2,4 GHz (Seekwave EA6521QF) | chạy | quét, kết nối WPA2, khoảng 44 Mbit/s, tự nối lại sau khi khởi động. **Chưa thử 5 GHz** |
-| Docker 29.x | chạy | đã thử `hello-world`, giới hạn RAM/pids/CPU, mạng NAT |
+| Docker 29.x | chạy | đã thử `hello-world`, giới hạn RAM/pids/CPU, mạng NAT. Cách cài: [`docs/docker.md`](docs/docker.md) |
 | Lỗi `setup TXBA failed` trong nhật ký Wi-Fi | vô hại | mỗi lần kết nối có một dòng: hai lệnh Block-Ack gửi sát nhau, lệnh thứ hai bị từ chối rồi thử lại thành công sau ~150 ms. Chi tiết trong [docs/pitfalls.md](docs/pitfalls.md) |
 | Màn hình số phía trước (FD650, 4 chữ số) | chạy | hiện giờ (HHMM) bằng `scripts/fd650.py clock`, chủ máy đã xác nhận. Chưa kiểm kỹ thứ tự chữ số và dấu hai chấm nhấp nháy |
 | Bluetooth, âm thanh, IR | chưa thử | |
@@ -36,4 +36,4 @@ mà là **Allwinner H313** (họ H616). Repo này chứa những thứ cần đ�
 * Wi-Fi không sẵn sàng vì thiếu xung 32,768 kHz trên PG10, và tên clock trong `mmc-pwrseq-simple` phải là `ext_clock`.
 * Firmware Android của box tự khai là *Google Pixel 6 Pro*: đừng tin nhãn hay thông tin máy.
 
-Chi tiết: [docs/hardware.md](docs/hardware.md), [docs/pitfalls.md](docs/pitfalls.md), [docs/wifi.md](docs/wifi.md). Giấy phép: [LICENSE](LICENSE), [NOTICE.md](NOTICE.md).
+Chi tiết: [docs/hardware.md](docs/hardware.md), [docs/pitfalls.md](docs/pitfalls.md), [docs/wifi.md](docs/wifi.md), [docs/docker.md](docs/docker.md). Giấy phép: [LICENSE](LICENSE), [NOTICE.md](NOTICE.md).
